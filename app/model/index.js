@@ -1,6 +1,6 @@
 /* @flow */
 
-var foo = require('./foo');
+var User = require('./user');
 
 var fs = require("fs");
 var path = require("path");

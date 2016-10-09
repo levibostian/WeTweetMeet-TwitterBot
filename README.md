@@ -1,3 +1,20 @@
+# We Tweet Meet - Twitter bot
+
+# Deploy
+
+```
+export WE_TWEET_MEET_CONSUMER_KEY="consumer key here"
+export WE_TWEET_MEET_CONSUMER_SECRET="consumer secret here"
+export WE_TWEET_MEET_ACCESS_TOKEN_KEY="access token key here"
+export WE_TWEET_MEET_ACCESS_TOKEN_SECRET="access token secret here"
+export WE_TWEET_MEET_TWITTER_HANDLE="@yourtwitterhandle"
+export WE_TWEET_MEET_URL="https://yourdomain.com"
+```
+
+Obtain these credentials [here](https://apps.twitter.com/) when you register a new app.
+
+---
+
 # ExpressjsBlanky
 Get up and running FAST on your next API project.
 
