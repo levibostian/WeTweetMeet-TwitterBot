@@ -6,7 +6,6 @@ var models = require('../model');
 var User = models.User;
 var express = require('express');
 var request = require('request-promise');
-request.debug = true;
 var querystring = require("querystring");
 var oauthSignature = require("oauth-signature");
 var uid2 = require('uid2');
@@ -72,7 +71,7 @@ app.get('/sign-in-with-twitter/callback', function(req, res, next) {
             });
         }
     });
-});        
+});
 
 var client = new Twitter({
     consumer_key: process.env.WE_TWEET_MEET_CONSUMER_KEY,
@@ -247,11 +246,116 @@ function getUser(tweet: Object): Promise<Object> {
     });
 };
 
+function findEarliestTweet(person1: string, person2: string, max_id: ?number, client: Twitter): Promise<Object> {
+    return new Promise(function(resolve, reject) {
+        var queryParams: Object = {q: "from:" + person1 + " " + "to:" + person2, result_type: 'mixed', count: 100};
+
+        //if (!max_id) {
+            queryParams.max_id = 783719025259929600;
+        //}
+
+        client.get('search/tweets', queryParams, function(error, tweets: Object, response) {
+            if (tweets.statuses.length === 0) {
+                return resolve();
+            } else if (tweets.statuses.length < 100) {
+                return resolve(tweets.statuses[tweets.statuses.length - 1]);
+            } else {
+                return findEarliestTweet(person1, person2, tweets[98].id, client); // return 98th just in case length === 100
+            }
+        });
+    });
+};
+
+function getMoreReadableDate(dateString: string): string {
+    var monthNames: string[] = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    var date: Date = new Date(dateString);
+
+    return monthNames[date.getMonth()] + " " + date.getDate() + " " + date.getFullYear();
+}
+
 function findFirstTweetTogether(tweet: Object, user: User): Promise<> {
     return new Promise(function(resolve, reject) {
         console.log('info', 'getting first tweet together');
-        return resolve();
-        // TODO use twitter search on behalf of user's access token. truncate down the tweets (using max_id) until find last one.
+        var person1: string = tweet.text.split(" ")[1].substr(1); // substr() to remove '@' char.
+        var person2: string = tweet.text.split(" ")[3].substr(1);
+
+        var userClient: Twitter = new Twitter({
+            consumer_key: process.env.WE_TWEET_MEET_CONSUMER_KEY,
+            consumer_secret: process.env.WE_TWEET_MEET_CONSUMER_SECRET,
+            access_token_key: user.twitter_access_token,
+            access_token_secret: user.twitter_access_secret
+        });
+
+        var tweet1: ?Object;
+        var tweet2: ?Object;
+        findEarliestTweet(person1, person2, null, userClient).then(function(earliestTweet: ?Object) {
+            tweet1 = earliestTweet;
+
+            return findEarliestTweet(person2, person1, null, userClient);
+        }).then(function(earliestTweet: ?Object) {
+            tweet2 = earliestTweet;
+
+            if (tweet == null) { throw new Error("shouldnt need this because flow should catch it."); }
+
+            if (tweet1 == null && tweet2 == null) {
+                sendReplyTweet(tweet, "Hmmm. Doesn't seem to be a tweet between these two.").then(function() {
+                    return resolve();
+                });
+            }
+
+            if (tweet1 == null) {
+                if (tweet2 == null) { throw new Error("shouldnt need this because flow should catch it."); }
+                sendReplyTweet(tweet, "Found it! The tweet is from " + getMoreReadableDate(tweet2.created_at) + " sent from @" + tweet2.user.screen_name).then(function() {
+                    if (tweet2 == null) { throw new Error("shouldnt need this because flow should catch it."); }
+
+                    return sendReplyTweet(tweet, tweet2.text);
+                }).then(function() {
+                    return resolve();
+                }).catch(function(error) {
+                    return reject(error);
+                });
+            }
+
+            if (tweet2 == null) {
+                if (tweet1 == null) { throw new Error("shouldnt need this because flow should catch it."); }
+                sendReplyTweet(tweet, "Found it! The tweet is from " + getMoreReadableDate(tweet1.created_at) + " sent from @" + tweet1.user.screen_name).then(function() {
+                    if (tweet1 == null) { throw new Error("shouldnt need this because flow should catch it."); }
+
+                    return sendReplyTweet(tweet, tweet1.text);
+                }).then(function() {
+                    return resolve();
+                }).catch(function(error) {
+                    return reject(error);
+                });
+            }
+
+            if (tweet1 == null || tweet2 == null) { throw new Error("Shouldn't need this. flow isnt catching it."); }
+
+            if (Date.parse(tweet1.created_at) < Date.parse(tweet2.created_at)) {
+                sendReplyTweet(tweet, "Found it! The tweet is from " + getMoreReadableDate(tweet1.created_at) + " sent from @" + tweet1.user.screen_name).then(function() {
+                    if (tweet1 == null) { throw new Error("shouldnt need this because flow should catch it."); }
+
+                    return sendReplyTweet(tweet, tweet1.text);
+                }).then(function() {
+                    return resolve();
+                }).catch(function(error) {
+                    return reject(error);
+                });
+            } else {
+                sendReplyTweet(tweet, "Found it! The tweet is from " + getMoreReadableDate(tweet2.created_at) + " sent from @" + tweet2.user.screen_name).then(function() {
+                    if (tweet2 == null) { throw new Error("shouldnt need this because flow should catch it."); }
+
+                    return sendReplyTweet(tweet, tweet2.text);
+                }).then(function() {
+                    return resolve();
+                }).catch(function(error) {
+                    return reject(error);
+                });
+            }
+        }).catch(function(error) {
+            return reject(error);
+        });
     });
 };
 
@@ -263,8 +367,6 @@ function processTweet(tweet: Object) {
         return getUser(tweet);
     }).then(function(user) {
         return findFirstTweetTogether(tweet, user);
-    }).then(function() {
-
     }).catch(function(error) {
         console.log('error', "error" + error.message);
     });
