@@ -1,6 +1,18 @@
 # We Tweet Meet - Twitter bot
 
+A bot that shows you your first tweet with someone. Created by @levibostian & @willlenzenjr
+
+We Tweet Meet? was a dream not able to come true. [Read the story on We Tweet Meet?'s Twitter account to hear about it.'](https://twitter.com/wetweetmeet)
+
+I learned a lot. Check out the code. If I was to build a bot again, I will use [async](https://github.com/caolan/async) more along side [bluebird](https://github.com/petkaantonov/bluebird) for parts of the program. Would remove lots of the hacky flow I had to implement. 
+
 # Deploy
+
+* Create a Twitter account to act as a bot.
+
+* Obtain credentials [here](https://apps.twitter.com/) when you register a new app with Twitter on this created Twitter account.
+
+* Deploy code to server with following environment variables.
 
 ```
 export WE_TWEET_MEET_CONSUMER_KEY="consumer key here"
@@ -11,38 +23,9 @@ export WE_TWEET_MEET_TWITTER_HANDLE="@yourtwitterhandle"
 export WE_TWEET_MEET_URL="https://yourdomain.com"
 ```
 
-Obtain these credentials [here](https://apps.twitter.com/) when you register a new app.
-
----
-
-# ExpressjsBlanky
-Get up and running FAST on your next API project.
-
-# Development
-The API is configured for development, staging, and production builds.
+Run program:
 
 ```
 npm install
-export NODE_ENV="development"
-```
-
-You may set `NODE_ENV` to:
-
-* `development`
-* `production`
-* `staging`
-
-Next we need to create a configuration: `cp app/config/config.example.json app/config/config.json` and then edit it: `nano app/config/config.json`. Edit the names of the databases, change what type of database you are using for each environment ('mysql'|'sqlite'|'postgres'|'mssql'), change the usernames and passwords to connect to your database.
-
-We are now ready for action:
-
-```
 npm start
 ```
-
-ExpressjsBlanky is designed to read the value of `NODE_ENV` and setup the environment for you. The config file does it all from there.
-
-# Documentation
-
-This API is uses [apidoc](http://apidocjs.com/) for API documentation.
-All documentation is located in HTML in `apidoc/`. You can open `apidoc/index.html` directly in your web browser to view the API documentation.
